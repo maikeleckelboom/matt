@@ -1,18 +1,30 @@
-import { type CustomColor, Scheme, type Theme } from '@material/material-color-utilities';
+import {
+  type CustomColor,
+  hexFromArgb,
+  Scheme,
+  type Theme,
+  TonalPalette,
+} from '@material/material-color-utilities';
 
-type CustomColorHex = Omit<CustomColor, 'value'> & { value: string };
+export type CustomColorHex = Omit<CustomColor, 'value'> & { value: string };
+
+export type KeyColorPalette = {
+  name: string;
+} & TonalPalette['keyColor'];
+
+type SubsetOption = 'scheme' | 'scheme.light' | 'scheme.dark' | 'palettes';
 
 export type ThemeConfig = {
-  primary: string;
+  source: string;
+  dark?: boolean;
+  // colorMode: 'light' | 'dark';
+  paletteTones?: number[];
   customColors: CustomColorHex[];
-  options: {
-    dark: boolean;
-  };
   properties: {
-    includes?: ('palettes' | 'dark' | 'light' | 'customColors')[];
     suffix?: string;
     prefix?: string;
-    transformFn: (argb: number) => string | number;
+    subset?: SubsetOption[];
+    transform?: (argb: number) => string | number;
   }[];
 };
 
@@ -24,54 +36,65 @@ function getSchemeProperties(scheme: Scheme, options: ThemeConfig['properties'][
   const properties: Record<string, string | number> = {};
   for (const [key, value] of Object.entries(scheme.toJSON())) {
     const token = key.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase();
-    properties[`--${prefix}${token}${suffix}`] = options.transformFn(value);
+    properties[`--${prefix}${token}${suffix}`] =
+      options?.transform && typeof options.transform === 'function'
+        ? options.transform(value)
+        : hexFromArgb(value);
   }
 
   return properties;
 }
 
 export function cssVarsFromTheme(theme: Theme, options: ThemeConfig) {
-  const isDark = options?.options?.dark ?? false;
-  const scheme = isDark ? theme.schemes.dark : theme.schemes.light;
+  const paletteTones = options?.paletteTones ?? TONES_DEFAULT;
+  const isDarkMode = options?.dark ?? false;
+  const scheme = isDarkMode ? theme.schemes.dark : theme.schemes.light;
 
-  return options.properties.map((ctx) => {
-    const baseline: Record<string, string | number> = getSchemeProperties(scheme, ctx);
+  if (!options?.properties?.length) {
+    const baseline = getSchemeProperties(scheme, {});
+    const light = getSchemeProperties(theme.schemes.light, {
+      suffix: '-light',
+    });
+    const dark = getSchemeProperties(theme.schemes.dark, {
+      suffix: '-dark',
+    });
+    return { ...baseline, ...light, ...dark };
+  }
 
+  const [props] = options.properties.map((ctx) => {
     const prefix = ctx?.prefix ?? '';
     const suffix = ctx?.suffix ?? '';
-
+    const baseline = !ctx?.subset || ctx?.subset?.includes('scheme') ? getSchemeProperties(scheme, ctx) : {};
     const light =
-      ctx?.includes && ctx.includes.includes('light')
+      !ctx?.subset || ctx?.subset?.includes('scheme.light')
         ? getSchemeProperties(theme.schemes.light, {
             ...ctx,
             suffix: `-light${suffix}`,
           })
         : {};
-
     const dark =
-      ctx?.includes && ctx.includes.includes('dark')
+      !ctx?.subset || ctx?.subset?.includes('scheme.dark')
         ? getSchemeProperties(theme.schemes.dark, {
             ...ctx,
             suffix: `-dark${suffix}`,
           })
         : {};
-
     const palettes: Record<string, string | number> = {};
-    if (ctx?.includes && ctx.includes.includes('palettes')) {
+    if (!ctx?.subset || ctx?.subset?.includes('palettes')) {
       for (const [key, palette] of Object.entries(theme.palettes)) {
         const paletteKey = key.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase();
-        for (const tone of TONES_DEFAULT) {
+        for (const tone of paletteTones) {
           const token = `${prefix}${paletteKey}${tone}`;
-          palettes[`--${token}`] = ctx.transformFn(palette.tone(tone));
+          palettes[`--${token}`] =
+            ctx?.transform && typeof ctx.transform === 'function'
+              ? ctx.transform(palette.tone(tone))
+              : hexFromArgb(palette.tone(tone));
         }
       }
     }
 
-    return {
-      ...baseline,
-      ...light,
-      ...dark,
-      ...palettes,
-    };
+    return { ...baseline, ...light, ...dark, ...palettes };
   });
+
+  return props;
 }
