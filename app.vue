@@ -2,56 +2,45 @@
 import {
   argbFromHex,
   Blend,
-  CustomColor,
   hexFromArgb,
-  Theme,
+  rgbaFromArgb,
+  type Theme,
   themeFromSourceColor,
   TonalPalette,
 } from '@material/material-color-utilities';
-import { propertiesFromTheme } from '@webhead/material-color-properties';
+import { cssVarsFromTheme, type ThemeConfig, TONES_DEFAULT } from '~/utils/propertiesFromTheme';
 
-const TONES_DEFAULT = [0, 5, 10, 15, 20, 30, 40, 50, 60, 70, 80, 90, 95, 100] as const;
-
-type CustomColorHex = Omit<CustomColor, 'value'> & { value: string };
-
-type Config = {
-  source: string;
-  customColors: CustomColorHex[];
-  options: {
-    dark: boolean;
-  };
-  /*
-    overrides?: {
-      primary?: string;
-      secondary?: string;
-      error?: string;
-      neutral?: string;
-    };
-  */
-};
-
-const config = reactive<Config>({
-  options: {
-    dark: true,
-  },
-  source: '#0088F0',
+const config = reactive<ThemeConfig>({
+  primary: '#0088F0',
   customColors: [
     {
       name: 'Canary Yellow',
       value: '#eeff00',
       blend: false,
     },
+  ],
+  options: {
+    dark: true,
+  },
+  properties: [
     {
-      name: 'Peach',
-      value: '#ffcc80',
-      blend: true,
+      prefix: '',
+      suffix: '-rgb',
+      includes: ['light', 'dark'],
+      transformFn: (argb: number) => {
+        const { r, g, b } = rgbaFromArgb(argb);
+        return `${r} ${g} ${b}`;
+      },
+    },
+    {
+      transformFn: (argb: number) => hexFromArgb(argb),
     },
   ],
 });
 
 const createThemeFromConfig = () =>
   themeFromSourceColor(
-    argbFromHex(config.source),
+    argbFromHex(config.primary),
     config.customColors.map((color) => ({
       name: color.name,
       value: argbFromHex(color.value),
@@ -85,7 +74,7 @@ const keyColorPalettes = computed(() => {
 });
 
 watch(
-  [() => config.source, () => config.customColors],
+  [() => config.primary, () => config.customColors],
   ([_s, _cc]) => {
     theme.value = createThemeFromConfig();
   },
@@ -96,8 +85,9 @@ useHead({
   style: [
     {
       textContent: computed(() => {
-        const { dark } = config.options;
-        return `:root {${Object.entries(propertiesFromTheme(theme.value as Theme, { dark }))
+        const props = cssVarsFromTheme(theme.value as Theme, config);
+        console.log({ props });
+        return `:root {${Object.entries(props)
           .map(([name, value]) => `${name}: ${value};`)
           .join('')}}`;
       }),
@@ -108,7 +98,7 @@ useHead({
 const getBackgroundColor = (color: string, tone: (typeof TONES_DEFAULT)[number], blend?: boolean) => {
   if (blend) {
     return hexFromArgb(
-      Blend.harmonize(TonalPalette.fromInt(argbFromHex(color)).tone(tone), argbFromHex(config.source)),
+      Blend.harmonize(TonalPalette.fromInt(argbFromHex(color)).tone(tone), argbFromHex(config.primary)),
     );
   }
   return hexFromArgb(TonalPalette.fromInt(argbFromHex(color)).tone(tone));
@@ -118,12 +108,13 @@ const getBackgroundColor = (color: string, tone: (typeof TONES_DEFAULT)[number],
 <template>
   <div>
     <h1 class="text-secondary font-semibold text-2xl">Material Color Utilities Wrapper</h1>
+    <div class="h-12 w-12 bg-[--primary]"></div>
     <div class="grid grid-cols-1">
       <div>
         <form>
           <div class="flex flex-col">
             <label for="source">Source Color</label>
-            <input id="source" v-model="config.source" type="color" />
+            <input id="source" v-model="config.primary" type="color" />
           </div>
           <div class="flex flex-col">
             <label for="dark">Dark Mode</label>
