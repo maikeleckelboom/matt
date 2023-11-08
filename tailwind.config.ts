@@ -1,9 +1,9 @@
 import type { Config } from 'tailwindcss';
+import { materialColorPreset } from './lib/material-colors.preset';
 
-export default {
-  content: ['./components/**/*.{vue,js,ts,jsx,tsx}', './layouts/**/*.vue', './pages/**/*.vue'],
-  theme: {
-    extend: {},
-  },
-  plugins: [],
+const config = {
+  content: ['./components/**/*.{vue,js,ts}', './layouts/**/*.vue', './pages/**/*.vue'],
+  presets: [materialColorPreset],
 } satisfies Config;
+
+export default config;

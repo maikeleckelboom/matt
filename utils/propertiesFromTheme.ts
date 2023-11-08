@@ -5,19 +5,17 @@ import {
   type Theme,
   TonalPalette,
 } from '@material/material-color-utilities';
+import { toCamelCase } from '~/utils/index';
 
 export type CustomColorHex = Omit<CustomColor, 'value'> & { value: string };
 
-export type KeyColorPalette = {
-  name: string;
-} & TonalPalette['keyColor'];
+export type KeyColorPalette = { name: string } & TonalPalette['keyColor'];
 
 type SubsetOption = 'scheme' | 'scheme.light' | 'scheme.dark' | 'palettes';
 
 export type ThemeConfig = {
   source: string;
   dark?: boolean;
-  // colorMode: 'light' | 'dark';
   paletteTones?: number[];
   customColors: CustomColorHex[];
   properties: {
@@ -45,7 +43,7 @@ function getSchemeProperties(scheme: Scheme, options: ThemeConfig['properties'][
   return properties;
 }
 
-export function cssVarsFromTheme(theme: Theme, options: ThemeConfig) {
+export function cssPropertiesFromTheme(theme: Theme, options: ThemeConfig) {
   const paletteTones = options?.paletteTones ?? TONES_DEFAULT;
   const isDarkMode = options?.dark ?? false;
   const scheme = isDarkMode ? theme.schemes.dark : theme.schemes.light;
@@ -58,7 +56,9 @@ export function cssVarsFromTheme(theme: Theme, options: ThemeConfig) {
     const dark = getSchemeProperties(theme.schemes.dark, {
       suffix: '-dark',
     });
-    return { ...baseline, ...light, ...dark };
+    const customColors = {};
+    // todo: add palettes and custom color palettes
+    return { ...baseline, ...light, ...dark, ...customColors };
   }
 
   const [props] = options.properties.map((ctx) => {
@@ -93,7 +93,20 @@ export function cssVarsFromTheme(theme: Theme, options: ThemeConfig) {
       }
     }
 
-    return { ...baseline, ...light, ...dark, ...palettes };
+    const customColors = options.customColors?.reduce(
+      (acc, color) => {
+        const token = toCamelCase(color.name)
+          .replace(/([a-z])([A-Z])/g, '$1-$2')
+          .toLowerCase();
+        acc[`--${token}`] = color.value;
+        return acc;
+      },
+      {} as Record<string, string | number>,
+    );
+
+    // console.log({ customColors });
+
+    return { ...baseline, ...light, ...dark, ...palettes, ...customColors };
   });
 
   return props;

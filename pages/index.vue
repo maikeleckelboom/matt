@@ -11,16 +11,12 @@ import {
 } from '@material/material-color-utilities';
 
 import {
-  cssVarsFromTheme,
+  cssPropertiesFromTheme,
   type KeyColorPalette,
   type ThemeConfig,
   TONES_DEFAULT,
 } from '~/utils/propertiesFromTheme';
 import type { Ref } from 'vue';
-import resolveConfig from 'tailwindcss/resolveConfig';
-import tailwindConfig from 'tailwindcss/defaultConfig';
-
-const imagePath = '../assets/source.png';
 
 const config = reactive<ThemeConfig>({
   source: '#ff00d2',
@@ -34,9 +30,8 @@ const config = reactive<ThemeConfig>({
   ],
   properties: [
     {
-      prefix: 'tw-',
       suffix: '-rgb',
-      subset: ['scheme', 'scheme.light', 'scheme.dark'],
+      subset: ['scheme'],
       transform: (argb: number) => {
         const { r, g, b } = rgbaFromArgb(argb);
         return `${r} ${g} ${b}`;
@@ -83,9 +78,10 @@ const keyColorPalettes = computed(() => {
   }, [] as KeyColorPalette[]);
 });
 
+const generated = computed(() => cssPropertiesFromTheme(theme.value, config));
+
 const textContent = computed(() => {
-  const generated = cssVarsFromTheme(theme.value, config);
-  return Object.entries(generated)
+  return Object.entries(generated.value)
     .map(([name, value]) => `${name}: ${value};`)
     .join('');
 });
@@ -93,7 +89,7 @@ const textContent = computed(() => {
 useHead({
   style: [
     {
-      textContent: textContent.value,
+      textContent: computed(() => `:root { ${textContent.value} }`),
     },
   ],
 });
@@ -113,7 +109,7 @@ const getBackgroundColor = (color: string, tone: (typeof TONES_DEFAULT)[number],
     <h1 class="text-secondary font-semibold text-2xl">Material Color Utilities Wrapper</h1>
     <div
       :style="{
-        backgroundColor: `rgb(var(--tw-secondary-rgb))`,
+        backgroundColor: `rgb(var(--secondary-rgb))`,
       }"
       class="h-12 w-12"
     ></div>
@@ -129,7 +125,7 @@ const getBackgroundColor = (color: string, tone: (typeof TONES_DEFAULT)[number],
             <input id="dark" v-model="config.dark" type="checkbox" />
           </div>
           <div>
-            <pre>{{ textContent }}</pre>
+            <pre>{{ generated }}</pre>
           </div>
           <div class="flex flex-col">
             <label for="customColors">Custom Colors</label>
@@ -180,3 +176,5 @@ const getBackgroundColor = (color: string, tone: (typeof TONES_DEFAULT)[number],
     </div>
   </div>
 </template>
+
+<style></style>
