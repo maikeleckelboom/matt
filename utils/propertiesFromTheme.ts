@@ -8,18 +8,16 @@ import {
 
 export type CustomColorHex = Omit<CustomColor, 'value'> & { value: string };
 
-export type KeyColorPalette = {
-  name: string;
-} & TonalPalette['keyColor'];
+export type PaletteKeyColor = { name: string } & TonalPalette['keyColor'];
 
 type SubsetOption = 'scheme' | 'scheme.light' | 'scheme.dark' | 'palettes';
 
 export type ThemeConfig = {
+  experimental_source_image?: string;
   source: string;
+  customColors?: CustomColorHex[];
   dark?: boolean;
-  // colorMode: 'light' | 'dark';
   paletteTones?: number[];
-  customColors: CustomColorHex[];
   properties: {
     suffix?: string;
     prefix?: string;
@@ -45,11 +43,10 @@ function getSchemeProperties(scheme: Scheme, options: ThemeConfig['properties'][
   return properties;
 }
 
-export function cssVarsFromTheme(theme: Theme, options: ThemeConfig) {
+export function propertiesFromTheme(theme: Theme, options: ThemeConfig) {
   const paletteTones = options?.paletteTones ?? TONES_DEFAULT;
   const isDarkMode = options?.dark ?? false;
   const scheme = isDarkMode ? theme.schemes.dark : theme.schemes.light;
-
   if (!options?.properties?.length) {
     const baseline = getSchemeProperties(scheme, {});
     const light = getSchemeProperties(theme.schemes.light, {
