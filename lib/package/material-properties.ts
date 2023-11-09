@@ -1,31 +1,15 @@
 import {
-  type CustomColor,
   type CustomColorGroup,
   hexFromArgb,
   Scheme,
   type Theme,
   TonalPalette,
 } from '@material/material-color-utilities';
-import { toCamelCase } from '~/utils/index';
+import { toCamelCase } from './utils';
+import type { PropertyFormatOptions, ThemePropertiesConfig } from '~/lib/package/types';
+import { PALETTE_TONES_DEFAULT } from '~/lib/package/constants';
 
-export type CustomColorHex = Omit<CustomColor, 'value'> & { value: string };
-
-type SubsetOption = 'scheme' | 'scheme.light' | 'scheme.dark' | 'palettes' | 'customColors';
-
-export type PropertiesConfig = {
-  isDark?: boolean;
-  paletteTones?: number[];
-  properties: {
-    suffix?: string;
-    prefix?: string;
-    subset?: SubsetOption[];
-    transform?: (argb: number) => string | number;
-  }[];
-};
-
-export const TONES_DEFAULT = [0, 5, 10, 15, 20, 30, 40, 50, 60, 70, 80, 90, 95, 100];
-
-function getSchemeProperties(scheme: Scheme, options?: PropertiesConfig['properties'][number]) {
+function propertiesFromScheme(scheme: Scheme, options?: PropertyFormatOptions) {
   const prefix = options?.prefix ?? '';
   const suffix = options?.suffix ?? '';
   const properties: Record<string, string | number> = {};
@@ -39,13 +23,9 @@ function getSchemeProperties(scheme: Scheme, options?: PropertiesConfig['propert
   return properties;
 }
 
-/**
- * IN PROGRESS
- */
-
-function getCustomSchemeProperties(
+function propertiesFromCustomColorGroup(
   customColorGroup: CustomColorGroup,
-  options: PropertiesConfig['properties'][number] & {
+  options: PropertyFormatOptions & {
     isDark?: boolean;
   },
 ) {
@@ -66,46 +46,36 @@ function getCustomSchemeProperties(
   return properties;
 }
 
-export function cssPropertiesFromTheme(
+function propertiesFromTheme(
   theme: Theme,
-  options: PropertiesConfig,
+  options?: ThemePropertiesConfig,
 ): Record<string, string | number>[] {
-  const paletteTones = options?.paletteTones ?? TONES_DEFAULT;
-  const isDarkMode = options?.isDark ?? false;
-  const scheme = isDarkMode ? theme.schemes.dark : theme.schemes.light;
+  const tones = options?.paletteTones ?? PALETTE_TONES_DEFAULT;
+  const isDark = options?.isDark ?? false;
+  const scheme = isDark ? theme.schemes.dark : theme.schemes.light;
 
   if (!options?.properties?.length) {
-    const base = getSchemeProperties(scheme);
-    const light = getSchemeProperties(theme.schemes.light, {
-      suffix: '-light',
-    });
-    const dark = getSchemeProperties(theme.schemes.dark, {
-      suffix: '-dark',
-    });
+    const base = propertiesFromScheme(scheme);
+    const light = propertiesFromScheme(theme.schemes.light, { suffix: '-light' });
+    const dark = propertiesFromScheme(theme.schemes.dark, { suffix: '-dark' });
     const palettes = Object.entries(theme.palettes).reduce((acc, [key, palette]) => {
-      const paletteProperties = getPropertiesFromPalette(key, palette, {
-        paletteTones,
-      });
+      const paletteProperties = propertiesFromPalette(key, palette, { tones });
       return { ...acc, ...paletteProperties };
     }, {});
     const customColors = theme?.customColors.reduce((acc, colorGroup) => {
-      const baseColorGroupProperties = getCustomSchemeProperties(colorGroup, {
-        isDark: isDarkMode,
-      });
-      const lightColorGroupProperties = getCustomSchemeProperties(colorGroup, {
+      const baseColorGroupProperties = propertiesFromCustomColorGroup(colorGroup, { isDark });
+      const lightColorGroupProperties = propertiesFromCustomColorGroup(colorGroup, {
         isDark: false,
         suffix: '-light',
       });
-      const darkColorGroupProperties = getCustomSchemeProperties(colorGroup, {
+      const darkColorGroupProperties = propertiesFromCustomColorGroup(colorGroup, {
         isDark: true,
         suffix: '-dark',
       });
-      const customColorPaletteProperties = getPropertiesFromPalette(
+      const customColorPaletteProperties = propertiesFromPalette(
         toCamelCase(colorGroup.color.name),
         TonalPalette.fromInt(colorGroup.color.value),
-        {
-          paletteTones,
-        },
+        { tones },
       );
       return {
         ...acc,
@@ -128,11 +98,12 @@ export function cssPropertiesFromTheme(
 
   return options.properties.map((ctx) => {
     const suffix = ctx?.suffix ?? '';
-    const base = !ctx?.subset || ctx?.subset?.includes('scheme') ? getSchemeProperties(scheme, ctx) : {};
+
+    const base = !ctx?.subset || ctx?.subset?.includes('scheme') ? propertiesFromScheme(scheme, ctx) : {};
 
     const light =
       !ctx?.subset || ctx?.subset?.includes('scheme.light')
-        ? getSchemeProperties(theme.schemes.light, {
+        ? propertiesFromScheme(theme.schemes.light, {
             ...ctx,
             suffix: `-light${suffix}`,
           })
@@ -140,7 +111,7 @@ export function cssPropertiesFromTheme(
 
     const dark =
       !ctx?.subset || ctx?.subset?.includes('scheme.dark')
-        ? getSchemeProperties(theme.schemes.dark, {
+        ? propertiesFromScheme(theme.schemes.dark, {
             ...ctx,
             suffix: `-dark${suffix}`,
           })
@@ -149,9 +120,9 @@ export function cssPropertiesFromTheme(
     const palettes =
       !ctx?.subset || ctx?.subset?.includes('palettes')
         ? Object.entries(theme.palettes).reduce((acc, [key, palette]) => {
-            const paletteProperties = getPropertiesFromPalette(key, palette, {
+            const paletteProperties = propertiesFromPalette(key, palette, {
               ...ctx,
-              paletteTones,
+              tones,
             });
             return { ...acc, ...paletteProperties };
           }, {})
@@ -160,43 +131,43 @@ export function cssPropertiesFromTheme(
     const customColors =
       !ctx?.subset || ctx?.subset?.includes('customColors')
         ? theme?.customColors.reduce((acc, colorGroup) => {
-            const baseColorGroupProperties = getCustomSchemeProperties(colorGroup, {
+            const base = propertiesFromCustomColorGroup(colorGroup, {
               ...ctx,
-              isDark: isDarkMode,
+              isDark: isDark,
             });
-            const lightColorGroupProperties =
+            const light =
               !ctx?.subset || ctx?.subset?.includes('scheme.light')
-                ? getCustomSchemeProperties(colorGroup, {
+                ? propertiesFromCustomColorGroup(colorGroup, {
                     ...ctx,
                     isDark: false,
                     suffix: `-light${suffix}`,
                   })
                 : {};
-            const darkColorGroupProperties =
+            const dark =
               !ctx?.subset || ctx?.subset?.includes('scheme.dark')
-                ? getCustomSchemeProperties(colorGroup, {
+                ? propertiesFromCustomColorGroup(colorGroup, {
                     ...ctx,
                     isDark: true,
                     suffix: `-dark${suffix}`,
                   })
                 : {};
-            const customColorPaletteProperties =
+            const palette =
               !ctx?.subset || ctx?.subset?.includes('palettes')
-                ? getPropertiesFromPalette(
+                ? propertiesFromPalette(
                     toCamelCase(colorGroup.color.name),
                     TonalPalette.fromInt(colorGroup.color.value),
                     {
                       ...ctx,
-                      paletteTones,
+                      tones,
                     },
                   )
                 : {};
             return {
               ...acc,
-              ...baseColorGroupProperties,
-              ...lightColorGroupProperties,
-              ...darkColorGroupProperties,
-              ...customColorPaletteProperties,
+              ...base,
+              ...light,
+              ...dark,
+              ...palette,
             };
           }, {})
         : {};
@@ -205,17 +176,17 @@ export function cssPropertiesFromTheme(
   });
 }
 
-const getPropertiesFromPalette = (
+const propertiesFromPalette = (
   name: string,
   palette: TonalPalette,
-  options: PropertiesConfig['properties'][number] & {
-    paletteTones: PropertiesConfig['paletteTones'];
+  options?: PropertyFormatOptions & {
+    tones: ThemePropertiesConfig['paletteTones'];
   },
 ) => {
   const properties = {} as Record<string, string | number>;
   const prefix = options?.prefix ?? '';
   const suffix = options?.suffix ?? '';
-  const paletteTones = options?.paletteTones ?? TONES_DEFAULT;
+  const paletteTones = options?.tones ?? PALETTE_TONES_DEFAULT;
   const paletteKey = name.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase();
   for (const tone of paletteTones) {
     const token = `${prefix}${paletteKey}-${tone}`;
@@ -227,10 +198,10 @@ const getPropertiesFromPalette = (
   return properties;
 };
 
-export function toStyleTextContent(props: ReturnType<typeof cssPropertiesFromTheme>) {
-  return props
-    .map((propertyKeyValue) =>
-      Object.entries(propertyKeyValue)
+function textFromProperties(properties: ReturnType<typeof propertiesFromTheme>) {
+  return properties
+    .map((property) =>
+      Object.entries(property)
         .map(([name, value]) => {
           return `${name}: ${value};`;
         })
@@ -238,3 +209,11 @@ export function toStyleTextContent(props: ReturnType<typeof cssPropertiesFromThe
     )
     .join('');
 }
+
+export {
+  propertiesFromTheme,
+  textFromProperties,
+  propertiesFromScheme,
+  propertiesFromCustomColorGroup,
+  propertiesFromPalette,
+};

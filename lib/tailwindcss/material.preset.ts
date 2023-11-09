@@ -1,5 +1,5 @@
 import { type Config } from 'tailwindcss';
-import { materialColorsPlugin } from './material-colors.plugin';
+import { materialColorsPlugin } from './material.plugin';
 
 type MaterialColorPluginOptions = {
   extend?: boolean;
