@@ -3,7 +3,7 @@ import { materialColorPreset } from './lib/material-colors.preset';
 
 const config = {
   content: ['./components/**/*.{vue,js,ts}', './layouts/**/*.vue', './pages/**/*.vue'],
-  presets: [materialColorPreset],
+  presets: [materialColorPreset({ extend: false })],
 } satisfies Config;
 
 export default config;
