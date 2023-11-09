@@ -11,6 +11,6 @@ type ThemePropertiesConfig = {
   }[];
 };
 
-type PropertyFormatOptions = Omit<Required<ThemePropertiesConfig>['properties'][number], 'subset'>;
+type PropertyConfig = Omit<Required<ThemePropertiesConfig>['properties'][number], 'subset'>;
 
-export type { ThemePropertiesConfig, PropertyFormatOptions };
+export type { ThemePropertiesConfig, PropertyConfig };

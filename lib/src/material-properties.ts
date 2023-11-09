@@ -1,15 +1,52 @@
 import {
   type CustomColorGroup,
+  DynamicScheme,
   hexFromArgb,
   Scheme,
+  type SchemeContent,
   type Theme,
   TonalPalette,
 } from '@material/material-color-utilities';
 import { toCamelCase } from './utils';
-import type { PropertyFormatOptions, ThemePropertiesConfig } from '~/lib/package/types';
-import { PALETTE_TONES_DEFAULT } from '~/lib/package/constants';
+import type { PropertyConfig, ThemePropertiesConfig } from '~/lib/src/types';
+import { PALETTE_TONES_DEFAULT } from '~/lib/src/constants';
+import { MaterialDynamicColors } from '@material/material-color-utilities/dynamiccolor/material_dynamic_colors';
 
-function propertiesFromScheme(scheme: Scheme, options?: PropertyFormatOptions) {
+function textFromProperties(properties: ReturnType<typeof propertiesFromTheme>) {
+  return properties
+    .map((property) =>
+      Object.entries(property)
+        .map(([name, value]) => {
+          return `${name}: ${value};`;
+        })
+        .join(''),
+    )
+    .join('');
+}
+
+function propertiesFromPalette(
+  name: string,
+  palette: TonalPalette,
+  options?: PropertyConfig & {
+    tones: ThemePropertiesConfig['paletteTones'];
+  },
+) {
+  const properties = {} as Record<string, string | number>;
+  const prefix = options?.prefix ?? '';
+  const suffix = options?.suffix ?? '';
+  const paletteTones = options?.tones ?? PALETTE_TONES_DEFAULT;
+  const paletteKey = name.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase();
+  for (const tone of paletteTones) {
+    const token = `${prefix}${paletteKey}-${tone}`;
+    properties[`--${token}${suffix}`] =
+      options?.transform && typeof options.transform === 'function'
+        ? options.transform(palette.tone(tone))
+        : hexFromArgb(palette.tone(tone));
+  }
+  return properties;
+}
+
+function propertiesFromScheme(scheme: Scheme, options?: PropertyConfig) {
   const prefix = options?.prefix ?? '';
   const suffix = options?.suffix ?? '';
   const properties: Record<string, string | number> = {};
@@ -25,7 +62,7 @@ function propertiesFromScheme(scheme: Scheme, options?: PropertyFormatOptions) {
 
 function propertiesFromCustomColorGroup(
   customColorGroup: CustomColorGroup,
-  options: PropertyFormatOptions & {
+  options: PropertyConfig & {
     isDark?: boolean;
   },
 ) {
@@ -53,7 +90,6 @@ function propertiesFromTheme(
   const tones = options?.paletteTones ?? PALETTE_TONES_DEFAULT;
   const isDark = options?.isDark ?? false;
   const scheme = isDark ? theme.schemes.dark : theme.schemes.light;
-
   if (!options?.properties?.length) {
     const base = propertiesFromScheme(scheme);
     const light = propertiesFromScheme(theme.schemes.light, { suffix: '-light' });
@@ -174,40 +210,6 @@ function propertiesFromTheme(
 
     return { ...base, ...light, ...dark, ...palettes, ...customColors };
   });
-}
-
-const propertiesFromPalette = (
-  name: string,
-  palette: TonalPalette,
-  options?: PropertyFormatOptions & {
-    tones: ThemePropertiesConfig['paletteTones'];
-  },
-) => {
-  const properties = {} as Record<string, string | number>;
-  const prefix = options?.prefix ?? '';
-  const suffix = options?.suffix ?? '';
-  const paletteTones = options?.tones ?? PALETTE_TONES_DEFAULT;
-  const paletteKey = name.replace(/([a-z])([A-Z])/g, '$1-$2').toLowerCase();
-  for (const tone of paletteTones) {
-    const token = `${prefix}${paletteKey}-${tone}`;
-    properties[`--${token}${suffix}`] =
-      options?.transform && typeof options.transform === 'function'
-        ? options.transform(palette.tone(tone))
-        : hexFromArgb(palette.tone(tone));
-  }
-  return properties;
-};
-
-function textFromProperties(properties: ReturnType<typeof propertiesFromTheme>) {
-  return properties
-    .map((property) =>
-      Object.entries(property)
-        .map(([name, value]) => {
-          return `${name}: ${value};`;
-        })
-        .join(''),
-    )
-    .join('');
 }
 
 export {

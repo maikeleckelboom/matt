@@ -12,9 +12,9 @@ import {
 
 import type { Ref } from 'vue';
 
-import { textFromProperties, propertiesFromTheme } from '~/lib/package/material-properties';
-import type { ThemePropertiesConfig } from '~/lib/package/types';
-import { PALETTE_TONES_DEFAULT } from '~/lib/package/constants';
+import { textFromProperties, propertiesFromTheme } from '~/lib/src/material-properties';
+import type { ThemePropertiesConfig } from '~/lib/src/types';
+import { PALETTE_TONES_DEFAULT } from '~/lib/src/constants';
 
 type CustomColorHex = Omit<CustomColor, 'value'> & { value: string };
 
@@ -111,13 +111,18 @@ const findCustomColorByName = (name: string) =>
 
 <template>
   <div>
-    <h1 class="text-secondary font-semibold text-2xl mb-6">Material Color Utilities Wrapper</h1>
+    <h1 class="text-secondary font-semibold text-2xl mb-12">Material Color Utilities Wrapper</h1>
+    <div class=" ">
+      <DynamicScheme />
+    </div>
     <div class="grid grid-cols-2">
       <div>
         <form class="w-fit bg-surface-level-1 text-on-surface flex flex-col p-4 rounded-xl gap-2">
           <div class="flex justify-between">
-            <label for="dark">Dark Mode</label>
-            <input id="dark" v-model="propertiesConfig.isDark" type="checkbox" />
+            <label for="dark" class="flex items-center gap-4">
+              <span>Dark Mode</span>
+              <input id="dark" v-model="propertiesConfig.isDark" type="checkbox" />
+            </label>
           </div>
           <div class="flex justify-between">
             <label for="source">Primary <span class="text-sm ml-1">(source color)</span></label>
