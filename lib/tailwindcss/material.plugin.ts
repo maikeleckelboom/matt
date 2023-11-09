@@ -5,7 +5,7 @@ type MaterialColorPluginOptions = {};
 export const materialColorsPlugin = (options?: MaterialColorPluginOptions) => {
   return plugin(({ addBase, theme }) => {
     addBase({
-      'html, body': {
+      body: {
         background: 'rgb(var(--background-rgb))',
         color: 'rgb(var(--on-background-rgb))',
         fontFamily: theme('fontFamily.sans'),

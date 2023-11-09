@@ -116,12 +116,12 @@ const findCustomColorByName = (name: string) =>
       <div>
         <form class="w-fit bg-surface-level-1 text-on-surface flex flex-col p-4 rounded-xl gap-2">
           <div class="flex justify-between">
-            <label for="source">Primary <span class="text-sm ml-1">(source color)</span></label>
-            <input id="source" v-model="themeConfig.source" type="color" />
-          </div>
-          <div class="flex justify-between">
             <label for="dark">Dark Mode</label>
             <input id="dark" v-model="propertiesConfig.isDark" type="checkbox" />
+          </div>
+          <div class="flex justify-between">
+            <label for="source">Primary <span class="text-sm ml-1">(source color)</span></label>
+            <input id="source" v-model="themeConfig.source" type="color" />
           </div>
           <div class="flex flex-col">
             <label class="mb-1" for="customColors">Custom Colors</label>
@@ -149,12 +149,7 @@ const findCustomColorByName = (name: string) =>
                 backgroundColor: hexFromArgb(TonalPalette.fromInt(keyColor.argb).tone(tone)),
               }"
               class="h-12 w-12 rounded"
-            >
-              <span class="hidden">{{ tone }}</span>
-            </div>
-            <div class="hidden">
-              <pre class="text-sm">{{ keyColor }}</pre>
-            </div>
+            ></div>
           </div>
         </div>
         <div v-for="(customColor, i) in themeConfig.customColors" :key="i" class="flex flex-col">
@@ -166,9 +161,7 @@ const findCustomColorByName = (name: string) =>
                 backgroundColor: getBackgroundColor(customColor.value, tone, customColor.blend),
               }"
               class="h-12 w-12 rounded"
-            >
-              <span class="hidden">{{ tone }}</span>
-            </div>
+            ></div>
           </div>
         </div>
       </div>

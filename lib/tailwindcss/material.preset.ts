@@ -145,14 +145,12 @@ const colorsConfig = {
     'surface-level-1': 'rgb(var(--primary-rgb) / 0.04)',
     'surface-level-2': 'rgb(var(--primary-rgb) / 0.08)',
     'surface-level-3': 'rgb(var(--primary-rgb) / 0.12)',
-    'surface-level-4': 'rgb(var(--primary-rgb) / 0.18)',
-    'surface-level-5': 'rgb(var(--primary-rgb) / 0.24)',
   },
 };
 
 export const materialColorPreset = (options: MaterialColorPluginOptions = { extend: false }) => {
   return {
-    content: ['./components/**/*.{vue,js,ts}', './layouts/**/*.vue', './pages/**/*.vue'],
+    content: [],
     theme: {
       ...(options.extend ? {} : colorsConfig),
       extend: {
