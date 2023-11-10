@@ -7,6 +7,9 @@
         <NuxtLink to="/">Package</NuxtLink>
       </li>
       <li class="mr-6">
+        <NuxtLink to="/dynamic">Dynamic</NuxtLink>
+      </li>
+      <li class="mr-6">
         <NuxtLink to="/tailwind">Tailwindcss</NuxtLink>
       </li>
     </ul>

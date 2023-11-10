@@ -3,36 +3,55 @@ import {
   argbFromHex,
   Hct,
   hexFromArgb,
-  MaterialDynamicColors,
+  rgbaFromArgb,
   SchemeContent,
 } from '@material/material-color-utilities';
+import {
+  colorsFromSchemeContent,
+  propertiesFromScheneContent,
+  textFromProperties,
+} from '~/lib/src/material-properties';
 
-const mainColor = '#3f51b5';
+const props = defineProps<{
+  source: string;
+  isDark: boolean;
+  contrastLevel: number;
+}>();
 
-const isDark = true;
-const contrastLevel = 0.3;
-const argb = argbFromHex(mainColor);
-const source = Hct.fromInt(argb);
-const dynamicScheme = new SchemeContent(source, isDark, contrastLevel);
-
-const dynamicSchemeContent = computed(() =>
-  Object.keys(MaterialDynamicColors)
-    .filter((key) => key !== 'contentAccentToneDelta')
-    .reduce((acc, key) => {
-      const color = (
-        MaterialDynamicColors[key as keyof Omit<MaterialDynamicColors, 'contentAccentToneDelta'>] as any
-      ).getArgb(dynamicScheme);
-      return { ...acc, [key]: hexFromArgb(color) };
-    }, {}),
+const dynamicSchemeContent = computed(
+  () => new SchemeContent(Hct.fromInt(argbFromHex(props.source)), props.isDark, props.contrastLevel),
 );
+const schemeContent = computed(() => colorsFromSchemeContent(dynamicSchemeContent.value));
+
+const properties = computed(() =>
+  propertiesFromScheneContent(dynamicSchemeContent.value, {
+    suffix: '-rgb',
+    prefix: '',
+    transform: (argb: number) => {
+      const { r, g, b } = rgbaFromArgb(argb);
+      return `${r} ${g} ${b}`;
+    },
+  }),
+);
+
+const textContent = computed(() => textFromProperties([properties.value]));
+
+useHead({
+  style: [
+    {
+      textContent: computed(() => `:root { ${textContent.value} }`),
+    },
+  ],
+});
 </script>
 
 <template>
-  <div class="grid grid-cols-6">
-    <div v-for="(color, key, index) in dynamicSchemeContent" :key="index">
-      {{ key.replace(/([A-Z])/g, ' $1').replace(/^./, (str) => str.toUpperCase()) }}
-      <div :style="{ backgroundColor: color }" class="h-12 w-12 rounded" />
-      <span>{{ color }}</span>
+  <div class="bg-surface-level-1 p-4">
+    <div class="grid grid-cols-6">
+      <div v-for="(color, key, index) in schemeContent" :key="index">
+        {{ key.replace(/([A-Z])/g, ' $1').replace(/^./, (str) => str.toUpperCase()) }}
+        <div :style="{ backgroundColor: hexFromArgb(color) }" class="h-12 w-12 rounded" />
+      </div>
     </div>
   </div>
 </template>

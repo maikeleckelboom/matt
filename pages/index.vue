@@ -12,7 +12,7 @@ import {
 
 import type { Ref } from 'vue';
 
-import { textFromProperties, propertiesFromTheme } from '~/lib/src/material-properties';
+import { propertiesFromTheme, textFromProperties } from '~/lib/src/material-properties';
 import type { ThemePropertiesConfig } from '~/lib/src/types';
 import { PALETTE_TONES_DEFAULT } from '~/lib/src/constants';
 
@@ -24,7 +24,7 @@ type ThemeConfig = {
 };
 
 const themeConfig = reactive<ThemeConfig>({
-  source: '#ffb700',
+  source: '#d22020',
   customColors: [
     {
       name: 'Cool Blue',
@@ -104,22 +104,16 @@ const keyColorPalettes = computed(() => {
     return acc;
   }, [] as KeyColorPalette[]);
 });
-
-const findCustomColorByName = (name: string) =>
-  theme.value.customColors.find((item) => item.color.name === name);
 </script>
 
 <template>
   <div>
     <h1 class="text-secondary font-semibold text-2xl mb-12">Material Color Utilities Wrapper</h1>
-    <div class=" ">
-      <DynamicScheme />
-    </div>
     <div class="grid grid-cols-2">
       <div>
         <form class="w-fit bg-surface-level-1 text-on-surface flex flex-col p-4 rounded-xl gap-2">
           <div class="flex justify-between">
-            <label for="dark" class="flex items-center gap-4">
+            <label class="flex items-center gap-4" for="dark">
               <span>Dark Mode</span>
               <input id="dark" v-model="propertiesConfig.isDark" type="checkbox" />
             </label>
@@ -139,8 +133,22 @@ const findCustomColorByName = (name: string) =>
                 <input v-model="color.name" class="bg-surface p-2" type="text" />
                 <input v-model="color.value" type="color" />
                 <input v-model="color.blend" type="checkbox" />
+                <button
+                  @click.prevent="themeConfig.customColors.splice(index, 1)"
+                  class="bg-primary text-on-primary p-2 rounded"
+                >
+                  Remove
+                </button>
               </div>
             </div>
+            <form>
+              <button
+                @click.prevent="themeConfig.customColors.push({ name: '', value: '#000000', blend: false })"
+                class="bg-primary text-on-primary p-2 rounded"
+              >
+                Add Color
+              </button>
+            </form>
           </div>
         </form>
       </div>
